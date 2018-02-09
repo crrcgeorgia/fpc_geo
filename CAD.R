@@ -52,132 +52,8 @@ theme_plot <- theme(
 )
 
 
-#### P23
-p23<-as.data.frame(svymean(~p23, cb2017ges, na.rm=TRUE), drop.unused.levels = TRUE)
-p23$Cat <- row.names(p23)
-p23$Cat <- gsub("p23", "", p23$Cat)
-p23 <- subset(p23, !Cat %in% c("Break off", "Legal skip", "Interviewer error"))
-kable(p23, format = "html")
-row.names(p23) <- NULL
 
-p23chart <- subset(p23, !Cat %in% c("Don't know", "Refuse to answer", "Other"))
-
-p23chart$Strat <- c("Question")
-p23chart$Strat[p23chart$Cat=="Don't know" | p23chart$Cat=="Refuse to answer" ] <- c("DK/RA")
-p23chart$Cat <- factor(p23chart$Cat, levels = p23chart$Cat[order(p23chart$mean)])
-
-p23dkra <- subset(p23, Cat %in% c("Don't know", "Refuse to answer", "Other"))
-p23dkra$Cat <- factor(p23dkra$Cat, levels = c("Don't know", "Refuse to answer", "Other"))
-p23dkra$Strat <- c("Question")
-p23dkra$Strat[p23dkra$Cat=="Don't know" | p23dkra$Cat=="Refuse to answer" ] <- c("DK/RA")
-
-p23chart <- rbind(p23dkra, p23chart)
-
-
-ggplot(p23chart, aes(y=mean, x=Cat,group=Strat,fill=Strat))+
-  geom_col()+
-  coord_flip()+
-  theme_plot+
-  labs(x = "Option",
-       
-       title="What is the main reason you would not support\nGeorgia’s membership in NATO? (%)",
-	   subtitle="The question was asked to the %\nwho did not support Georgia's membership in NATO")+
-  geom_text(data=p23chart,
-            aes(x=Cat,y=mean,label=ifelse(mean > 0.015, sprintf("%0.f", round(mean*100, digits = 0)), "")),
-            position = position_stack(vjust=0.5),
-            family="Futura Hv BT")+
- scale_fill_manual(name="კატეგორია",
-  					values=c("#999999","#66c2a5"))+
-  scale_y_continuous(labels=function(x)x*100, limits=c(0, 1))+
-		theme(legend.position = "none",
-	axis.title.y = element_blank(),
-	axis.title.x = element_blank(),
-	axis.text.x = element_blank(),
-	axis.ticks.x = element_blank(),
-				legend.direction = "vertical")
-
-ggsave("why_not_nato.png", height=7, width=13.5, dpi=300, device="png")
-				
-#### P23
-p29<-as.data.frame(svymean(~p29, cb2017ges, na.rm=TRUE), 
-                   drop.unused.levels = TRUE)
-p29$Cat <- row.names(p29)
-p29$Cat <- gsub("p29", "", p29$Cat)
-p29 <- subset(p29, !Cat %in% c("Break off", "Legal skip", "Interviewer error"))
-kable(p29, format = "html")
-row.names(p29) <- NULL
-
-p29chart <- subset(p29, !Cat %in% c("Don't know", "Refuse to answer", "Other"))
-
-p29chart$Strat <- c("Question")
-p29chart$Strat[p29chart$Cat=="Don't know" | p29chart$Cat=="Refuse to answer" ] <- c("DK/RA")
-p29chart$Cat <- factor(p29chart$Cat, levels = p29chart$Cat[order(p29chart$mean)])
-
-p29dkra <- subset(p29, Cat %in% c("Don't know", "Refuse to answer", "Other"))
-p29dkra$Cat <- factor(p29dkra$Cat, levels = c("Don't know", "Refuse to answer", "Other"))
-p29dkra$Strat <- c("Question")
-p29dkra$Strat[p29dkra$Cat=="Don't know" | p29dkra$Cat=="Refuse to answer" ] <- c("DK/RA")
-
-p29chart <- rbind(p29dkra, p29chart)
-
-
-ggplot(p29chart, aes(y=mean, x=Cat,group=Strat,fill=Strat))+
-  geom_col()+
-  coord_flip()+
-  theme_plot+
-  labs(x = "Option",
-       
-       title="What is the main reason you would not support\nGeorgia’s membership in EEU? (%)",
-	   subtitle="The question was asked to the %\nwho did not support Georgia's membership in EEU")+
-  geom_text(data=p29chart,
-            aes(x=Cat,y=mean,label=ifelse(mean > 0.015, sprintf("%0.f", round(mean*100, digits = 0)), "")),
-            position = position_stack(vjust=0.5),
-            family="Futura Hv BT")+
- scale_fill_manual(name="კატეგორია",
-  					values=c("#999999","#66c2a5"))+
-  scale_y_continuous(labels=function(x)x*100, limits=c(0, 1))+
-		theme(legend.position = "none",
-	axis.title.y = element_blank(),
-	axis.title.x = element_blank(),
-	axis.text.x = element_blank(),
-	axis.ticks.x = element_blank(),
-				legend.direction = "vertical")
-
-ggsave("why_not_odkb.png", height=7, width=13.5, dpi=300, device="png")
-				
-### Rand1
-
-rand1<-as.data.frame(svymean(~rand1, cb2017ges, na.rm=TRUE), drop.unused.levels = TRUE)
-rand1$Cat <- row.names(rand1)
-rand1$Cat <- gsub("rand1", "", rand1$Cat)
-rand1 <- subset(rand1, !Cat %in% c("Break off", "Legal skip", "Interviewer error"))
-kable(rand1, format = "html")
-row.names(rand1) <- NULL
-rand1l <- rand1$Cat
-rand1$Cat <- factor(rand1$Cat, levels=rand1l)
-
-ggplot(rand1, aes(y=mean, x=Cat, fill=Cat))+
-  geom_col()+
-  coord_flip()+
-  theme_plot+
-  labs(x = "Option",
-       
-       title="Agree or disagree: tensions between Russia and the Western European countries and the US\nare detrimental to Georgia? (%)")+
-  geom_text(data=rand1,
-            aes(x=Cat,y=mean,label=ifelse(mean > 0.015, sprintf("%0.f", round(mean*100, digits = 0)), "")),
-            position = position_stack(vjust=0.5),
-            family="Futura Hv BT")+
- scale_fill_manual(name="კატეგორია",
-  					values=c("#999999","#d6d6d6","#a6611a","#dfc27d","#80cdc1", "#018571"))+
-  scale_y_continuous(labels=function(x)x*100, limits=c(0, 1))+
-		theme(legend.position = "none",
-	axis.title.y = element_blank(),
-	axis.title.x = element_blank(),
-	axis.text.x = element_blank(),
-	axis.ticks.x = element_blank(),
-				legend.direction = "vertical")
-
-ggsave("tensions_freq.png", height=7, width=13.5, dpi=300, device="png")
+		
 
 ### Models
 
@@ -243,7 +119,8 @@ cb2017mod$us[cb2017mod$p31==26] <- 1
 prop.table(table(cb2017mod$us))
 
 
-covar <- glm(neutbin~nato+eu+eeu+rand1mod+factor(edu)+factor(stratum)+ethn+age, 
+covar <- glm(neutbin~nato+eu+eeu+rand1mod+factor(edu)+
+               factor(stratum)+ethn+age, 
              data=cb2017mod, family="binomial")
 summary(covar)
 
@@ -323,52 +200,6 @@ ggsave("natomemb_settlement.png", height=7, width=13.5, dpi=300, device="png")
 
 ### Rand1
 
-natop <- data.frame(rand1mod = rep(c(1, 2, 3, 4, 5), 3), eu = mean(cb2017mod$eu, na.rm=TRUE), 
-                    eeu = mean(cb2017mod$eeu, na.rm=TRUE), edu=1,
-                    ethn = mean(cb2017mod$ethn, na.rm=TRUE), nato = mean(cb2017mod$nato, na.rm=TRUE), age = mean(cb2017mod$age, na.rm=TRUE),
-                    stratum = rep(c(1, 2, 3), each=5))
-
-pp.write <- cbind(natop, predict(covar, newdata = 
-                                     natop, type = "response", 
-                                      se.fit = TRUE))
-names(pp.write) <- c("cat", "cov1","cov2", "cov3", "cov4", "cov5", "cov6","cov7",  "fit", "sefit", "resid")
-
-
-pp.write$cov7 <- factor(pp.write$cov7,
-						labels=c("Tbilisi", "Other urban", "Rural" ))
-
-pp.write$cat <- factor(pp.write$cat,
-                       labels=c("Completely\nagree", "Rather\nagree", "In the middle",
-					   "Rather\ndisagree", "Completely\ndisagree"))
-					   
-ggplot(pp.write, aes(cat, fit, group=cov7))+
-  geom_point(aes(color=cov7),
-             position=position_dodge(width=0.4))+
-  geom_errorbar(aes(ymax = fit+1.96*sefit,
-                    ymin = fit-1.96*sefit,
-                    color=cov7),
-                width=0.1, size=0.4, 
-                position=position_dodge(width=0.4))+
-  theme_plot+
-  coord_cartesian(ylim = c(0, 1), expand = FALSE)+
-  labs(title="Agree That Georgia Should Be Neutral",
-  subtitle="Predicted Probabilities",
-  x="Tensions between Russia and\nthe Western European countries and\nthe US are detrimental to Georgia")+
-  theme(
-    legend.position="top",
-    axis.title.y = element_blank(),
-    # axis.title.x = element_blank(),
-    panel.grid.major.y = element_line(colour = "grey80"),
-    legend.title = element_blank(),
-    axis.text.x = element_text(size=10),
-    strip.background = element_blank(),
-    panel.spacing = unit(2, "lines")
-  )
-
-ggsave("tensions_settlement.png", height=7, width=13.5, dpi=300, device="png")
-
-### Rand1
-
 natop <- data.frame(age = rep(c(18:100), 3), rand1mod = mean(cb2017mod$rand1mod, na.rm=TRUE), eu = mean(cb2017mod$eu, na.rm=TRUE), 
                     eeu = mean(cb2017mod$eeu, na.rm=TRUE), edu=rep(c(1, 2, 3), each=1),
                     ethn = 1, nato = mean(cb2017mod$nato, na.rm=TRUE),
@@ -410,58 +241,6 @@ ggsave("tensions_settlement.png", height=7, width=13.5, dpi=300, device="png")
 
 
 ### crosstabs:
-
-rand1.stratum <- as.data.frame(svytable(~rand1+stratum, cb2017ges), drop.unused.levels = TRUE)
-rand1.stratum <- subset(rand1.stratum, !rand1 %in% c("Break off", "Legal skip", "Interviewer error"))
-rand1.stratum <- rand1.stratum %>%
-  group_by(stratum) %>%
-  mutate(prop = Freq/sum(Freq))
-  
-ggplot(rand1.stratum, aes(stratum, prop, fill=rand1))+
-  geom_bar(stat="identity", position="stack")+
-  coord_flip()
-
-rand2 <- as.data.frame(svytable(~rand2, cb2017ges), drop.unused.levels = TRUE) %>%
-  subset(., !rand2 %in% c("Break off", "Legal skip", "Interviewer error")) %>%
-  mutate(prop=Freq/sum(Freq))
-
-p22 <- as.data.frame(svytable(~p22, cb2017ges), drop.unused.levels = TRUE) %>%
-  subset(., !p22 %in% c("Break off", "Legal skip", "Interviewer error")) %>%
-  mutate(prop=Freq/sum(Freq))
-
-ggplot(rand2.p22, aes(p22, prop, fill=rand2))+
-  geom_bar(stat="identity", position="stack")+
-  coord_flip()+
-  guides(fill = guide_legend(reverse=T))+
-  geom_text(data=rand2.p22,
-            aes(x=p22,y=prop,label=ifelse(prop > 0.015, sprintf("%0.f", round(prop*100, digits = 0)), "")),
-            position = position_stack(vjust=0.5),
-            family="Futura Hv BT")+
-  scale_fill_manual(name="კატეგორია",
-                    values=c("#999999","#d6d6d6","#a6611a","#dfc27d","#80cdc1", "#018571"))+
-  labs(title="Alignment with a bloc vs. neutrality \nBy support of membership in NATO",
-  subtitle="Caucasus Barometer, 2017")+
-  scale_y_continuous(labels=function(x)x*100, limits=c(0, 1))+
-  theme_plot+
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5),
-    axis.title.y = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    # axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    axis.ticks.x = element_blank(),
-    legend.direction = "horizontal",
-    legend.position = "bottom",
-    legend.text.align = 0,
-    legend.title = element_blank(),
-    panel.border = element_blank(),
-    plot.margin = unit(c(0.5,6,1,0.5), "cm")
-  )
-  
-ggsave("neutral_nato_xtab.png", height=7, width=13.5, dpi=300, device="png")
-
 
 rand2.rand1 <- as.data.frame(svytable(~rand2+rand1, cb2017ges), drop.unused.levels = TRUE) %>%
   subset(., !rand2 %in% c("Break off", "Legal skip", "Interviewer error") & !rand1 %in% c("Break off", "Legal skip", "Interviewer error")) %>%
