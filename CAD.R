@@ -20,7 +20,7 @@ options(knitr.table.format = "html")
 
 setwd("D:\\Dropbox\\My Projects\\CRRC\\Caucasus Barometer\\2017\\analysis\\CAD\\models")
 
-cb2017ge <- read.dta13("CB_2017_Georgia_10.11.17.dta",
+cb2017ge <- read.dta13("../CB_2017_Georgia_10.11.17.dta",
                                convert.factors = TRUE,
                                nonint.factors = TRUE,
                                generate.factors = TRUE,
@@ -52,12 +52,62 @@ theme_plot <- theme(
 )
 
 
+### Make figure 1
+
+memb <- as.data.frame(svymean(~p22+p25+p28_geo, cb2017ges, na.rm=TRUE),
+                      drop.unused.levels = TRUE) %>%
+  mutate(Cat = row.names(.)) %>%
+  mutate(Cat = gsub("p22*|p25*|p28_geo*", "", Cat)) %>%
+  subset(., !Cat %in% c("Break off", "Legal skip", "Interviewer error"))
+
+
+
+memb$Strat <- "NATO"
+memb$Strat[8:14] <- "EU"
+memb$Strat[15:21] <- "EEU"
+
+memb$Cat <- factor(memb$Cat, levels=c("Refuse to answer", "Don't know", "Do not support at all",
+							"Rather not support", "Partially support, partially do not support", "Rather support",
+							"Fully support"))
+							
+ggplot(memb, aes(x=Strat, fill=Cat))+
+  geom_bar(data=memb, aes(y=mean), stat="identity", position="stack")+
+  labs(title="How Do You Support Georgia's Membership in ...? (%)",
+  subtitle="Caucasus Barometer, 2017")+
+  scale_fill_manual(name="კატეგორია",
+                    values=c("#999999", "#444444", "#a6611a","#dfc27d", "#d6d6d6","#80cdc1", "#018571"))+
+  scale_y_continuous(labels=function(x)x*100)+
+  guides(fill = guide_legend(reverse=T))+
+  coord_flip(xlim=c(1, 3))+
+  geom_text(data=memb,
+            aes(x=Strat,y=mean,label=ifelse(mean > 0.015, sprintf("%0.f", round(mean*100, digits = 0)), "")),
+            position = position_stack(vjust=0.5),
+            family="BPG Excelsior Caps", color="white")+
+  theme_plot+
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    # axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.ticks.x = element_blank(),
+    panel.border = element_blank(),
+    legend.direction = "horizontal",
+    legend.position = "bottom",
+    legend.text.align = 0,
+    legend.title = element_blank(),
+    plot.margin = unit(c(0.5,3.5,1,0.5), "cm")
+  )
+
+ggsave("figure1.png", height=7, width=13.5, dpi=300, device="png")
 
 		
 
 ### Models
 
-cb2017mod <- read_dta("CB_2017_Georgia_10.11.17.dta")
+cb2017mod <- read_dta("../CB_2017_Georgia_10.11.17.dta")
 cb2017mod[, 1:373][ cb2017mod[ , 1:373 ] == -9 ] <- NA
 cb2017mod[, 1:373][ cb2017mod[ , 1:373 ] == -3 ] <- NA
 
@@ -137,7 +187,7 @@ natop <- data.frame(nato = rep(c(1, 2, 3, 4, 5), 3), eu = mean(cb2017mod$eu, na.
 nato.write <- cbind(natop, predict(covar, newdata = 
                                      natop, type = "response", 
                                       se.fit = TRUE))
-nato.write$model <- "nato"
+nato.write$model <- "NATO"
 
 names(nato.write) <- c("cat", "cov1","cov2", "cov3", "cov4", "cov5", "cov6","cov7",  "fit", "sefit", "resid", "model")
 
@@ -147,7 +197,7 @@ eup <- data.frame(eu = rep(c(1, 2, 3, 4, 5), 3), nato = mean(cb2017mod$nato, na.
                   stratum = rep(c(1, 2, 3), each=5))
 eu.write <- cbind(eup, predict(covar, newdata = eup,
                                type = "response", se.fit = TRUE))
-eu.write$model <- "eu"
+eu.write$model <- "EU"
 names(eu.write) <- c("cat", "cov1","cov2", "cov3", "cov4", "cov5", "cov6", "cov7", "fit", "sefit", "resid", "model")
 
 eeup <- data.frame(eeu = rep(c(1, 2, 3, 4, 5), 3), nato = mean(cb2017mod$nato, na.rm=TRUE), 
@@ -156,7 +206,7 @@ eeup <- data.frame(eeu = rep(c(1, 2, 3, 4, 5), 3), nato = mean(cb2017mod$nato, n
                    stratum = rep(c(1, 2, 3), each=5))
 eeu.write <- cbind(eeup, predict(covar, newdata = eeup,
                                  type = "response", se.fit = TRUE))
-eeu.write$model <- "eeu"
+eeu.write$model <- "EEU"
 names(eeu.write) <- c("cat", "cov1","cov2", "cov3", "cov4", "cov5", "cov6", "cov7", "fit", "sefit", "resid", "model")
 
 
@@ -180,9 +230,12 @@ ggplot(pp.write, aes(cat, fit, group=model))+
                 width=0.1, size=0.4, position=position_dodge(width=0.4))+
   theme_plot+
   coord_cartesian(ylim = c(0, 1), expand = FALSE)+
+  scale_y_continuous(labels=function(x)x*100)+
+  scale_color_manual(name="კატეგორია",
+                    values=c("#1b9e77", "#d95f02", "#7570b3"))+  
   facet_wrap(~cov7)+
   labs(title="Agree That Georgia Should Be Neutral",
-  subtitle="Predicted Probabilities",
+  subtitle="Predicted Probabilities With 95% Confidence Intervals",
   x="To What Extent do You Support Georgia's Membership in...")+
   theme(
     legend.position="top",
@@ -195,350 +248,6 @@ ggplot(pp.write, aes(cat, fit, group=model))+
     panel.spacing = unit(2, "lines")
   )
 
-ggsave("natomemb_settlement.png", height=7, width=13.5, dpi=300, device="png")
+ggsave("figure3.png", height=7, width=13.5, dpi=300, device="png")
 
 
-### Rand1
-
-natop <- data.frame(age = rep(c(18:100), 3), rand1mod = mean(cb2017mod$rand1mod, na.rm=TRUE), eu = mean(cb2017mod$eu, na.rm=TRUE), 
-                    eeu = mean(cb2017mod$eeu, na.rm=TRUE), edu=rep(c(1, 2, 3), each=1),
-                    ethn = 1, nato = mean(cb2017mod$nato, na.rm=TRUE),
-                    stratum = 1)
-					
-pp.write <- cbind(natop, predict(covar, newdata = 
-                                     natop, type = "response", 
-                                      se.fit = TRUE))
-
-names(pp.write) <- c("cat", "cov1","cov2", "cov3", "cov4", "cov5", "cov6","cov7",  "fit", "sefit", "resid")
-
-
-pp.write$cov5 <- factor(pp.write$cov5,
-                       labels=c("Other", "Georgian"))
-					   
-ggplot(pp.write, aes(cat, fit, group=cov4))+
-  geom_line(aes(color=cov4))+
-  # geom_ribbon(aes(ymax = fit+1.96*sefit,
-  #                  ymin = fit-1.96*sefit), alpha=0.2)+
-  theme_plot+
-  coord_cartesian(ylim = c(0, 1), expand = FALSE)+
-  labs(title="Agree That Georgia Should Be Neutral",
-  subtitle="Predicted Probabilities",
-  x="Tensions between Russia and\nthe Western European countries and\nthe US are detrimental to Georgia")+
-  theme(
-    legend.position="top",
-    axis.title.y = element_blank(),
-    # axis.title.x = element_blank(),
-    panel.grid.major.y = element_line(colour = "grey80"),
-    legend.title = element_blank(),
-    axis.text.x = element_text(size=10),
-    strip.background = element_blank(),
-    panel.spacing = unit(2, "lines")
-  )
-
-ggsave("tensions_settlement.png", height=7, width=13.5, dpi=300, device="png")
-
-
-
-
-### crosstabs:
-
-rand2.rand1 <- as.data.frame(svytable(~rand2+rand1, cb2017ges), drop.unused.levels = TRUE) %>%
-  subset(., !rand2 %in% c("Break off", "Legal skip", "Interviewer error") & !rand1 %in% c("Break off", "Legal skip", "Interviewer error")) %>%
-  group_by(rand1) %>%
-  mutate(prop=Freq/sum(Freq))
-
-ggplot(rand2.rand1, aes(rand1, prop, fill=rand2))+
-  geom_bar(stat="identity", position="stack")+
-  coord_flip()+
-  guides(fill = guide_legend(reverse=T))+
-  geom_text(data=rand2.rand1,
-            aes(x=rand1,y=prop,label=ifelse(prop > 0.015, sprintf("%0.f", round(prop*100, digits = 0)), "")),
-            position = position_stack(vjust=0.5),
-            family="Futura Hv BT")+
-  scale_fill_manual(name="კატეგორია",
-                    values=c("#999999","#d6d6d6","#a6611a","#dfc27d","#80cdc1", "#018571"))+
-  labs(title="Alignment with a bloc vs. neutrality \nBy tensions between the West and Russia are detrimental to Georgia",
-  subtitle="Caucasus Barometer, 2017")+
-  scale_y_continuous(labels=function(x)x*100, limits=c(0, 1))+
-  theme_plot+
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5),
-    axis.title.y = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    # axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    axis.ticks.x = element_blank(),
-    legend.direction = "horizontal",
-    legend.position = "bottom",
-    legend.text.align = 0,
-    legend.title = element_blank(),
-    panel.border = element_blank(),
-    plot.margin = unit(c(0.5,3.5,1,0.5), "cm")
-  )
-
-# ggsave("neutral_tensions_xtab.png", height=7, width=13.5, dpi=300, device="png")
-
-	
-rand2.d6 <- as.data.frame(svytable(~rand2+d6, cb2017ges), drop.unused.levels = TRUE) %>%
-  subset(., !rand2 %in% c("Break off", "Legal skip", "Interviewer error") & !d6 %in% c("Break off", "Legal skip", "Interviewer error")) %>%
-  group_by(d6) %>%
-  mutate(prop=Freq/sum(Freq))
-
-ggplot(rand2.d6, aes(d6, prop, fill=rand2))+
-  geom_bar(stat="identity", position="stack")+
-  coord_flip()+
-  guides(fill = guide_legend(reverse=T))+
-  geom_text(data=rand2.d6,
-            aes(x=d6,y=prop,label=ifelse(prop > 0.015, sprintf("%0.f", round(prop*100, digits = 0)), "")),
-            position = position_stack(vjust=0.5),
-            family="Futura Hv BT")+
-  scale_fill_manual(name="კატეგორია",
-                    values=c("#999999","#d6d6d6","#a6611a","#dfc27d","#80cdc1", "#018571"))+
-  scale_y_continuous(labels=function(x)x*100, limits=c(0, 1))+
-  theme_plot+
-  theme(
-    axis.title.y = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    legend.direction = "vertical")
-	
-## ggsave("neutral_flang_xtab.png", height=7, width=13.5, dpi=300, device="png")
-
-### NATO Membership and migrants
-
-p22.m1 <- as.data.frame(svytable(~p22+m1, cb2017ges), drop.unused.levels = TRUE) %>%
-  subset(., !p22 %in% c("Break off", "Legal skip", "Interviewer error") & 
-           !m1 %in% c("Refuse to answer", "Break off", "Legal skip", "Interviewer error")) %>%
-  group_by(m1) %>%
-  mutate(prop=Freq/sum(Freq))
-
-ggplot(p22.m1, aes(m1, prop, fill=p22))+
-  geom_bar(stat="identity", position="stack")+
-  coord_flip()+
-  guides(fill = guide_legend(reverse=T))+
-  geom_text(data=p22.m1,
-            aes(x=m1,y=prop,label=ifelse(prop > 0.015, 
-                                        sprintf("%0.f", round(prop*100, digits = 0)), "")),
-            position = position_stack(vjust=0.5),
-            family="Futura Hv BT")+
-  scale_fill_manual(name="კატეგორია",
-                    values=c("#999999", "#444444", "#a6611a","#dfc27d","#d6d6d6", "#80cdc1", "#018571"))+
-  scale_y_continuous(labels=function(x)x*100, limits=c(0, 1))+
-  labs(title="Support of Georgia's membership in NATO \nBy the attitudes towards migrants",
-  subtitle="Caucasus Barometer, 2017")+
-  theme_plot+
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5),
-    axis.title.y = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    # axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    axis.ticks.x = element_blank(),
-    legend.direction = "horizontal",
-    legend.position = "bottom",
-    legend.text.align = 0,
-    legend.title = element_blank(),
-    panel.border = element_blank(),
-    plot.margin = unit(c(0.5,3,1,0.5), "cm")
-  )
-
-ggsave("nato_migrants_xtab.png", height=7, width=13.5, dpi=300, device="png")
-
-### EU Membership and migrants
-
-p25.m1 <- as.data.frame(svytable(~p25+m1, cb2017ges), drop.unused.levels = TRUE) %>%
-  subset(., !p25 %in% c("Break off", "Legal skip", "Interviewer error") & 
-           !m1 %in% c("Refuse to answer", "Break off", "Legal skip", "Interviewer error")) %>%
-  group_by(m1) %>%
-  mutate(prop=Freq/sum(Freq))
-
-ggplot(p25.m1, aes(m1, prop, fill=p25))+
-  geom_bar(stat="identity", position="stack")+
-  coord_flip()+
-  guides(fill = guide_legend(reverse=T))+
-  geom_text(data=p25.m1,
-            aes(x=m1,y=prop,label=ifelse(prop > 0.015, 
-                                        sprintf("%0.f", round(prop*100, digits = 0)), "")),
-            position = position_stack(vjust=0.5),
-            family="Futura Hv BT")+
-  scale_fill_manual(name="კატეგორია",
-                    values=c("#999999", "#444444", "#a6611a","#dfc27d","#d6d6d6", "#80cdc1", "#018571"))+
-  scale_y_continuous(labels=function(x)x*100, limits=c(0, 1))+
-  labs(title="Support of Georgia's membership in the EU \nBy the attitudes towards migrants",
-  subtitle="Caucasus Barometer, 2017")+
-  theme_plot+
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5),
-    axis.title.y = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    # axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    axis.ticks.x = element_blank(),
-    legend.direction = "horizontal",
-    legend.position = "bottom",
-    legend.text.align = 0,
-    legend.title = element_blank(),
-    panel.border = element_blank(),
-    plot.margin = unit(c(0.5,3,1,0.5), "cm")
-  )
-
-ggsave("eu_migrants_xtab.png", height=7, width=13.5, dpi=300, device="png")
-
-### EU Membership and migrants
-
-p28_geo.p13 <- as.data.frame(svytable(~p28_geo+p13, cb2017ges), drop.unused.levels = TRUE) %>%
-  subset(., !p28_geo %in% c("Break off", "Legal skip", "Interviewer error") & 
-           !p13 %in% c("Break off", "Legal skip", "Interviewer error")) %>%
-  group_by(p13) %>%
-  mutate(prop=Freq/sum(Freq))
-
-ggplot(p28_geo.p13, aes(p13, prop, fill=p28_geo))+
-  geom_bar(stat="identity", position="stack")+
-  coord_flip()+
-  guides(fill = guide_legend(reverse=T))+
-  geom_text(data=p28_geo.p13,
-            aes(x=p13,y=prop,label=ifelse(prop > 0.015, 
-                                        sprintf("%0.f", round(prop*100, digits = 0)), "")),
-            position = position_stack(vjust=0.5),
-            family="Futura Hv BT")+
-  scale_fill_manual(name="კატეგორია",
-                    values=c("#999999", "#444444", "#a6611a","#dfc27d","#d6d6d6", "#80cdc1", "#018571"))+
-  scale_y_continuous(labels=function(x)x*100, limits=c(0, 1))+
-  labs(title="Support of Georgia's membership in the EU \nBy the attitudes towards migrants",
-  subtitle="Caucasus Barometer, 2017")+
-  theme_plot+
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5),
-    axis.title.y = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    # axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    axis.ticks.x = element_blank(),
-    legend.direction = "horizontal",
-    legend.position = "bottom",
-    legend.text.align = 0,
-    legend.title = element_blank(),
-    panel.border = element_blank(),
-    plot.margin = unit(c(0.5,3,1,0.5), "cm")
-  )
-
-ggsave("eu_govtrol_xtab.png", height=7, width=13.5, dpi=300, device="png")
-
-### EU Membership and migrants
-
-p28_geo.p13 <- as.data.frame(svytable(~p28_geo+p13, cb2017ges), drop.unused.levels = TRUE) %>%
-  subset(., !p28_geo %in% c("Break off", "Legal skip", "Interviewer error") & 
-           !p13 %in% c("Break off", "Legal skip", "Interviewer error")) %>%
-  group_by(p13) %>%
-  mutate(prop=Freq/sum(Freq))
-
-ggplot(p28_geo.p13, aes(p13, prop, fill=p28_geo))+
-  geom_bar(stat="identity", position="stack")+
-  coord_flip()+
-  guides(fill = guide_legend(reverse=T))+
-  geom_text(data=p28_geo.p13,
-            aes(x=p13,y=prop,label=ifelse(prop > 0.015, 
-                                        sprintf("%0.f", round(prop*100, digits = 0)), "")),
-            position = position_stack(vjust=0.5),
-            family="Futura Hv BT")+
-  scale_fill_manual(name="კატეგორია",
-                    values=c("#999999", "#444444", "#a6611a","#dfc27d","#d6d6d6", "#80cdc1", "#018571"))+
-  scale_y_continuous(labels=function(x)x*100, limits=c(0, 1))+
-  labs(title="Support of Georgia's membership in the EU \nBy the attitudes towards migrants",
-  subtitle="Caucasus Barometer, 2017")+
-  theme_plot+
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5),
-    axis.title.y = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    # axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    axis.ticks.x = element_blank(),
-    legend.direction = "horizontal",
-    legend.position = "bottom",
-    legend.text.align = 0,
-    legend.title = element_blank(),
-    panel.border = element_blank(),
-    plot.margin = unit(c(0.5,3,1,0.5), "cm")
-  )
-
-ggsave("eeu_govtrol_xtab.png", height=7, width=13.5, dpi=300, device="png")
-
-### Russia friend
-cb2017ges$variables$ru <- 0
-cb2017ges$variables$ru[cb2017ges$variables$p32=="Russia"] <- 1
-rand2.ru <- as.data.frame(svytable(~rand2+ru, cb2017ges), drop.unused.levels = TRUE) %>%
-  subset(., !rand2 %in% c("Break off", "Legal skip", "Interviewer error") & !ru %in% c("Break off", "Legal skip", "Interviewer error")) %>%
-  group_by(ru) %>%
-  mutate(prop=Freq/sum(Freq))
-
-### Membership in Nato, EU, EEU
-memb <- as.data.frame(svymean(~p22+p25+p28_geo, cb2017ges, na.rm=TRUE),
-                      drop.unused.levels = TRUE) %>%
-  mutate(Cat = row.names(.), Cat = gsub("p22|p25|p28_geo", "", Cat)) %>%
-  subset(., !Cat %in% c("Break off", "Legal skip", "Interviewer error"))
-
-memb$Strat <- "NATO"
-memb$Strat[8:14] <- "EU"
-memb$Strat[15:21] <- "EEU"
-
-memb$Cat <- factor(memb$Cat, levels=c("Refuse to answer", "Don't know", "Do not support at all",
-							"Rather not support", "Partially support, partially do not support", "Rather support",
-							"Fully support"))
-							
-ggplot(memb, aes(x=Strat, fill=Cat))+
-  geom_bar(data=memb, aes(y=mean), stat="identity", position="stack")+
-  labs(title="How do you support Georgia's membership in ...? (%)",
-  subtitle="Caucasus Barometer, 2017")+
-  scale_fill_manual(name="კატეგორია",
-                    values=c("#999999", "#444444", "#a6611a","#dfc27d", "#d6d6d6","#80cdc1", "#018571"))+
-  scale_y_continuous(labels=function(x)x*100)+
-  guides(fill = guide_legend(reverse=T))+
-  coord_flip(xlim=c(1, 3))+
-  geom_text(data=memb,
-            aes(x=Strat,y=mean,label=ifelse(mean > 0.015, sprintf("%0.f", round(mean*100, digits = 0)), "")),
-            position = position_stack(vjust=0.5),
-            family="BPG Excelsior Caps", color="white")+
-  theme_plot+
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5),
-    axis.title.y = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    # axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    axis.ticks.x = element_blank(),
-    panel.border = element_blank(),
-    legend.direction = "horizontal",
-    legend.position = "bottom",
-    legend.text.align = 0,
-    legend.title = element_blank(),
-    plot.margin = unit(c(0.5,3.5,1,0.5), "cm")
-  )
-
-ggsave("membership.png", height=7, width=13.5, dpi=300, device="png")
-
-
-### Interaction term
-
-covar <- glm(neutbin~nato+eu+eeu+rand1mod+factor(edu)+
-               factor(stratum)+ethn+age+ru*us, 
-             data=cb2017mod, family="binomial")
-
-summary(covar)
-
-c <- as.data.frame(covar$coefficients)
-c$cat <- row.names(c)
-clust.bs.p <- cluster.bs.glm(covar, cb2017mod, ~ psu, report = T)
