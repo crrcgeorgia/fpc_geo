@@ -223,11 +223,12 @@ pp.write$cov7 <- factor(pp.write$cov7,
 #### collect all predictions:
 
 ggplot(pp.write, aes(cat, fit, group=model))+
-  geom_point(aes(color=model), position=position_dodge(width=0.4))+
+  geom_point(aes(color=model, shape=model), position=position_dodge(width=0.4))+
   geom_errorbar(aes(ymax = fit+1.96*sefit,
                     ymin = fit-1.96*sefit,
                     color=model),
                 width=0.1, size=0.4, position=position_dodge(width=0.4))+
+  scale_shape(guide=FALSE)+
   theme_plot+
   coord_cartesian(ylim = c(0, 1), expand = FALSE)+
   scale_y_continuous(labels=function(x)x*100)+
